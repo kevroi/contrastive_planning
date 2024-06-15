@@ -1,7 +1,7 @@
 import argparse
 import warnings
 
-import d4rl
+# import d4rl
 import gym
 import haiku as hk
 import jax
@@ -19,6 +19,7 @@ import os
 import agents
 import utils.training
 from utils.training import train, save_seed
+from envs.Tree import Tree
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -27,7 +28,7 @@ print("Devices: ", jax.devices())
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--env", type=str, default="door-human-v0")
+parser.add_argument("--env", type=str, default="BinaryTree-v0")
 parser.add_argument("--num_shuffle", type=int, default=3)
 parser.add_argument("--repr_dim", type=int, default=32)
 parser.add_argument("--use_rotation", action="store_true", default=False)

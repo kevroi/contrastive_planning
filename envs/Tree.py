@@ -18,7 +18,10 @@ class Tree(gym.Env):
         
         # Define action and observation space
         self.action_space = spaces.Discrete(2)  # 0: left, 1: right
-        self.observation_space = spaces.Discrete(2 ** (self.depth + 1) - 1)  # Total number of nodes in a binary tree of given depth
+        self.observation_space = spaces.Box(low=0, high=1,
+                                            shape=(2 ** (self.depth + 1) - 1,),
+                                            dtype=np.float32)  # One-hot vector of length equal to number of nodes
+
 
         self.current_node = 0
         self.steps_taken = 0
@@ -44,11 +47,16 @@ class Tree(gym.Env):
                 node_id += 2
 
         return G
+    
+    def _get_one_hot(self, node):
+        one_hot = np.zeros(self.observation_space.shape, dtype=np.float32)
+        one_hot[node] = 1.0
+        return one_hot
 
     def reset(self):
         self.current_node = 0
         self.steps_taken = 0
-        return self.current_node
+        return self._get_one_hot(self.current_node)
 
     def step(self, action):
         assert self.action_space.contains(action), "Invalid action"
@@ -64,7 +72,7 @@ class Tree(gym.Env):
         done = self.steps_taken >= self.max_steps
         reward = 0
 
-        return self.current_node, reward, done, {}
+        return self._get_one_hot(self.current_node), reward, done, {}
 
     def render(self, mode='human'):
         pos = nx.multipartite_layout(self.tree, subset_key="depth")
