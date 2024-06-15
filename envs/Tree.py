@@ -4,7 +4,6 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
-from utils.training import Dataset
 
 class Tree(gym.Env):
     metadata = {'render.modes': ['human']}
