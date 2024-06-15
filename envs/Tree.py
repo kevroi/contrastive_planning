@@ -8,9 +8,10 @@ import random
 class Tree(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, depth=3):
+    def __init__(self, depth=3, max_steps=100):
         super(Tree, self).__init__()
         self.depth = depth
+        self.max_steps = max_steps
         self.tree = self._create_binary_tree(self.depth)
         self.leaf_nodes = [node for node, degree in self.tree.degree() if degree == 1 and self.tree.nodes[node]['depth'] == depth]
         self.num_leaf_nodes = len(self.leaf_nodes)
@@ -20,6 +21,7 @@ class Tree(gym.Env):
         self.observation_space = spaces.Discrete(2 ** (self.depth + 1) - 1)  # Total number of nodes in a binary tree of given depth
 
         self.current_node = 0
+        self.steps_taken = 0
 
     def _create_binary_tree(self, depth):
         G = nx.Graph()
@@ -45,22 +47,30 @@ class Tree(gym.Env):
 
     def reset(self):
         self.current_node = 0
+        self.steps_taken = 0
         return self.current_node
 
     def step(self, action):
         assert self.action_space.contains(action), "Invalid action"
 
-        next_node = list(self.tree.neighbors(self.current_node))[action]
+        neighbors = list(self.tree.neighbors(self.current_node))
+        if len(neighbors) > 1:
+            next_node = neighbors[action]
+        else:
+            next_node = neighbors[0]
         self.current_node = next_node
 
-        done = self.current_node in self.leaf_nodes
-        reward = 1 if done else 0
+        self.steps_taken += 1
+        done = self.steps_taken >= self.max_steps
+        reward = 0
 
         return self.current_node, reward, done, {}
 
     def render(self, mode='human'):
         pos = nx.multipartite_layout(self.tree, subset_key="depth")
-        nx.draw(self.tree, pos, with_labels=True, node_size=500, node_color="skyblue", font_size=10, font_color="black", font_weight="bold", edge_color="gray")
+        nx.draw(self.tree, pos, with_labels=True, node_size=500,
+                node_color="skyblue", font_size=10, font_color="black",
+                font_weight="bold", edge_color="gray")
         plt.show()
 
     def close(self):
@@ -76,10 +86,11 @@ gym.envs.registration.register(
 if __name__ == "__main__":
     env = gym.make('BinaryTree-v0', depth=3)
     env.reset()
-    for _ in range(10):
+    done = False
+    while not done:
         action = env.action_space.sample()
         observation, reward, done, info = env.step(action)
-        print(f"Action: {action}, Observation: {observation}, Reward: {reward}, Done: {done}")
+        print(f"Step: {env.steps_taken}, Action: {action}, Observation: {observation}, Reward: {reward}, Done: {done}")
         if done:
             break
     env.render()
