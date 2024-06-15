@@ -4,6 +4,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
+from utils.training import Dataset
 
 class Tree(gym.Env):
     metadata = {'render.modes': ['human']}
@@ -76,6 +77,42 @@ class Tree(gym.Env):
     def close(self):
         pass
 
+    def get_dataset(self, num_episodes=2):
+        max_steps = self.max_steps
+
+        observations = []
+        actions = []
+        rewards = []
+        terminals = []
+        timeouts = []
+
+        for _ in range(num_episodes):
+            obs = self.reset()
+            for _ in range(max_steps):
+                action = self.action_space.sample()
+                next_obs, reward, done, _ = self.step(action)
+
+                observations.append(obs)
+                actions.append(action)
+                rewards.append(reward)
+                terminals.append(done)
+                timeouts.append(done and self.steps_taken == self.max_steps)
+
+                obs = next_obs
+
+                if done:
+                    break
+
+        dataset = {
+            'observations': np.array(observations),
+            'actions': np.array(actions),
+            'rewards': np.array(rewards),
+            'terminals': np.array(terminals),
+            'timeouts': np.array(timeouts)
+        }
+
+        return dataset
+
 # Register the environment
 gym.envs.registration.register(
     id='BinaryTree-v0',
@@ -84,13 +121,11 @@ gym.envs.registration.register(
 
 # Usage example
 if __name__ == "__main__":
-    env = gym.make('BinaryTree-v0', depth=3)
-    env.reset()
-    done = False
-    while not done:
-        action = env.action_space.sample()
-        observation, reward, done, info = env.step(action)
-        print(f"Step: {env.steps_taken}, Action: {action}, Observation: {observation}, Reward: {reward}, Done: {done}")
-        if done:
-            break
-    env.render()
+    env = gym.make('BinaryTree-v0', depth=3, max_steps=10)
+    dataset = env.get_dataset()
+
+    print(f"Observations: {dataset['observations']}")
+    print(f"Actions: {dataset['actions']}")
+    print(f"Rewards: {dataset['rewards']}")
+    print(f"Terminals: {dataset['terminals']}")
+    print(f"Timeouts: {dataset['timeouts']}")
