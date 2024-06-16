@@ -8,7 +8,7 @@ import random
 class Tree(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, depth=3, max_steps=100):
+    def __init__(self, depth=3, max_steps=1000):
         super(Tree, self).__init__()
         self.depth = depth
         self.max_steps = max_steps
@@ -23,7 +23,7 @@ class Tree(gym.Env):
                                             dtype=np.float32)  # One-hot vector of length equal to number of nodes
 
 
-        self.current_node = 0
+        self.current_node = random.randrange(2**self.depth - 1)
         self.steps_taken = 0
 
     def _create_binary_tree(self, depth):
@@ -54,7 +54,7 @@ class Tree(gym.Env):
         return one_hot
 
     def reset(self):
-        self.current_node = 0
+        self.current_node = random.randrange(2**self.depth - 1)
         self.steps_taken = 0
         return self._get_one_hot(self.current_node)
 
