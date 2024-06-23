@@ -8,7 +8,7 @@ import random
 class Tree(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, depth=3, max_steps=1000):
+    def __init__(self, depth=5, max_steps=100):
         super(Tree, self).__init__()
         self.depth = depth
         self.max_steps = max_steps
@@ -17,11 +17,10 @@ class Tree(gym.Env):
         self.num_leaf_nodes = len(self.leaf_nodes)
         
         # Define action and observation space
-        self.action_space = spaces.Discrete(2)  # 0: left, 1: right
+        self.action_space = spaces.Discrete(3)  # 0: move back/up, 1: move right and up, 2: move right and down
         self.observation_space = spaces.Box(low=0, high=1,
                                             shape=(2 ** (self.depth + 1) - 1,),
                                             dtype=np.float32)  # One-hot vector of length equal to number of nodes
-
 
         self.current_node = random.randrange(2**self.depth - 1)
         self.steps_taken = 0
@@ -61,13 +60,29 @@ class Tree(gym.Env):
     def step(self, action):
         assert self.action_space.contains(action), "Invalid action"
 
+        current_depth = self.tree.nodes[self.current_node]['depth']
         neighbors = list(self.tree.neighbors(self.current_node))
-        if len(neighbors) > 1:
-            next_node = neighbors[action]
-        else:
-            next_node = neighbors[0]
-        self.current_node = next_node
 
+        if action == 0:  # move back/up
+            if current_depth == 0:
+                next_node = self.current_node  # Stay at the root
+            else:
+                # Find the parent node
+                parent = [node for node in neighbors if self.tree.nodes[node]['depth'] < current_depth]
+                next_node = parent[0] if parent else self.current_node
+        else:
+            children = [node for node in neighbors if self.tree.nodes[node]['depth'] > current_depth]
+            if not children:
+                next_node = self.current_node  # Stay at the leaf
+            else:
+                if action == 1:  # move right and up
+                    next_node = children[0] if len(children) > 0 else self.current_node
+                elif action == 2:  # move right and down
+                    next_node = children[1] if len(children) > 1 else self.current_node
+                else:
+                    next_node = self.current_node
+
+        self.current_node = next_node
         self.steps_taken += 1
         done = self.steps_taken >= self.max_steps
         reward = 0
@@ -84,7 +99,7 @@ class Tree(gym.Env):
     def close(self):
         pass
 
-    def get_dataset(self, num_episodes=2):
+    def get_dataset(self, num_episodes=1):
         max_steps = self.max_steps
 
         observations = []
@@ -112,6 +127,7 @@ class Tree(gym.Env):
 
         dataset = {
             'observations': np.array(observations),
+            'nodes': np.array([np.argmax(obs) for obs in observations]),
             'actions': np.array(actions),
             'rewards': np.array(rewards),
             'terminals': np.array(terminals),
@@ -131,7 +147,8 @@ if __name__ == "__main__":
     env = gym.make('BinaryTree-v0', depth=3, max_steps=10)
     dataset = env.get_dataset()
 
-    print(f"Observations: {dataset['observations']}")
+    # print(f"Observations: {dataset['observations']}")
+    print(f"Nodes: {dataset['nodes']}")
     print(f"Actions: {dataset['actions']}")
     print(f"Rewards: {dataset['rewards']}")
     print(f"Terminals: {dataset['terminals']}")
