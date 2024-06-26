@@ -8,7 +8,7 @@ import random
 class Tree(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, depth=5, max_steps=100):
+    def __init__(self, depth=5, max_steps=1000):
         super(Tree, self).__init__()
         self.depth = depth
         self.max_steps = max_steps
@@ -99,7 +99,7 @@ class Tree(gym.Env):
     def close(self):
         pass
 
-    def get_dataset(self, num_episodes=1):
+    def get_dataset(self, num_episodes=100):
         max_steps = self.max_steps
 
         observations = []
